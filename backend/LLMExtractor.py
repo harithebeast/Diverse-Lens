@@ -30,9 +30,6 @@ def extract_text_from_url(url):
    downloaded = trafilatura.fetch_url(url)
    return trafilatura.extract(downloaded)
 
-def get_article_info(url):
-   return {'heading': extract_heading_from_url(url), 'text': extract_text_from_url(url)}
-
 def is_url(url):
   try:
     result = urlparse(url)
@@ -40,23 +37,29 @@ def is_url(url):
   except ValueError:
     return False
 
-def predict(info):
-    #check if input is url
-    results = {}
-    if is_url(info):
-       temp = get_article_info(info)
-       results.update(temp)
-    
-    text = ''
-    for i in news_query(temp['heading']):
-        text += i + '\n'
+def predict(my_news):
+    query = my_news
 
-    # join results in format haeding, text in str
-    print(text)
+    if is_url(my_news):
+       my_news = extract_text_from_url(my_news)  
+       query = extract_heading_from_url(my_news) 
+    
+    corpus_of_text = ''
+    for url in news_query(query):
+        corpus_of_text += extract_text_from_url(url) + '\n'
 
     genai.configure(api_key='AIzaSyAx90CfmOJc3qUC_Y5f7OmQGhrcbYlYjDQ')
     model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(f"can you check this article {temp['text']} for genre, fake news and bias with source using this text info: {text} and return the results in format Genre, fake news and bias")
+    response = model.generate_content(
+       f'''Analyze the provided text: {corpus_of_text}
+
+        Identify the following for the news article {my_news}:
+          * Genre: Is it news reporting, opinion, satire, etc.?
+          * Fake news likelihood: How likely is it to be factually incorrect or misleading?
+          * Bias: Does it lean towards a particular viewpoint? If so, which one?
+
+        Please provide the results in a clear format like "Genre: News Report, Fake News: Low, Bias: Neutral"'''
+    )
     return to_markdown(response.text) 
 
 if __name__ == "__main__":
