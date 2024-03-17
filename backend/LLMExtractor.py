@@ -7,16 +7,19 @@ from googlesearch import search
 import textwrap
 from IPython.display import Markdown
 import google.generativeai as genai
+from gnews import GNews
+
 
 def to_markdown(text):
   text = text.replace('•', '  *')
   return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
 
-
 def news_query(query, limit=5):
     results = []
-    for i in search(query, num_results=limit, sleep_interval=2):
-        results.append(i)
+    google_news = GNews()
+    news = google_news.get_news(query)
+    for i in range(limit):
+        results.append(news[i]['url'])
     return results
 
 def extract_heading_from_url(url):
@@ -44,21 +47,14 @@ def predict(my_news):
        my_news = extract_text_from_url(my_news)  
        query = extract_heading_from_url(my_news) 
     
-    corpus_of_text = ''
+    corpus_of_links = ''
     for url in news_query(query):
-        corpus_of_text += extract_text_from_url(url) + '\n'
+        corpus_of_links += extract_text_from_url(url) + '\n'
 
     genai.configure(api_key='AIzaSyAx90CfmOJc3qUC_Y5f7OmQGhrcbYlYjDQ')
     model = genai.GenerativeModel('gemini-pro')
     response = model.generate_content(
-       f'''Analyze the provided text: {corpus_of_text}
-
-        Identify the following for the news article {my_news}:
-          * Genre: Is it news reporting, opinion, satire, etc.?
-          * Fake news likelihood: How likely is it to be factually incorrect or misleading?
-          * Bias: Does it lean towards a particular viewpoint? If so, which one?
-
-        Please provide the results in a clear format like "Genre: News Report, Fake News: Low, Bias: Neutral"'''
+       f'''Analyze the provided links: {corpus_of_links}.can you answer whether the following statement with explanation is baised/unbaised or truth/fake: {my_news}'''
     )
     return to_markdown(response.text) 
 
