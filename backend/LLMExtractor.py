@@ -26,9 +26,10 @@ model = genai.GenerativeModel('gemini-pro')
     return to_markdown(response.text)'''
 
 def news_query(query, limit=5):
-    search_results = search(query, num_results=limit)
-    return search_results
-
+    results = []
+    for i in search(query, num_results=limit, sleep_interval=2):
+        results.append(i)
+    return results
 
 def extract_heading_from_url(url):
     r = requests.get(url, headers=headers)
@@ -49,22 +50,21 @@ def is_url(url):
   except ValueError:
     return False
 
-def extract_keywords(text):
-    doc = nlp(text)
-    keywords = [token.text for token in doc if not token.is_stop and token.is_alpha]
-    return ' '.join(keywords)
-
-def predict(input):
+def predict(info):
     #check if input is url
-    if is_url(input):
-       input = get_article_info(input)
+    results = {}
+    if is_url(info):
+       temp = get_article_info(info)
+       results.update(temp)
     
-    for i in news_query(input['heading']):
-       print(i)
+    for i in news_query(temp['heading']):
+       results.update(get_article_info(i))
 
-    
+    for heading, text in results.items():
+       print(heading)
+       print(text)
+       print()
        
-
 if __name__ == "__main__":
-   input = input("Enter the input: ")
-   predict(input)
+   info = input("Enter the input: ")
+   predict(info)
