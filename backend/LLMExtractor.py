@@ -34,7 +34,8 @@ def news_query(query, limit=5):
 def extract_heading_from_url(url):
     r = requests.get(url, headers=headers)
     soup = BeautifulSoup(r.text, 'html.parser')
-    return [heading.text for heading in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])][0]
+    heading = [heading.text for heading in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])][0]
+    return heading if heading else 'No Heading'
 
 def extract_text_from_url(url):
    downloaded = trafilatura.fetch_url(url)
