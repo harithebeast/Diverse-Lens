@@ -15,7 +15,7 @@ def to_markdown(text):
 
 def news_query(query, limit=5):
     results = []
-    for i in search(query, num_results=limit, sleep_interval=2):
+    for i in search('News Articles like: '+query, num_results=limit, sleep_interval=2):
         results.append(i)
     return results
 
@@ -54,14 +54,7 @@ def predict(my_news):
     genai.configure(api_key='AIzaSyAx90CfmOJc3qUC_Y5f7OmQGhrcbYlYjDQ')
     model = genai.GenerativeModel('gemini-pro')
     response = model.generate_content(
-       f'''Analyze the provided text: {corpus_of_text}
-
-        Identify the following for the news article {my_news}:
-          * Genre: Is it news reporting, opinion, satire, etc.?
-          * Fake news likelihood: How likely is it to be factually incorrect or misleading?
-          * Bias: Does it lean towards a particular viewpoint? If so, which one?
-
-        Please provide the results in a clear format like "Genre: News Report, Fake News: Low, Bias: Neutral"'''
+       f"{my_news}. can you check if this news is fake or original and biased or unbiased and cite sources. corpus of text: {corpus_of_text}""'''
     )
     return to_markdown(response.text) 
 
