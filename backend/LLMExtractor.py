@@ -26,12 +26,15 @@ def extract_heading_from_url(url):
     r = requests.get(url, headers={'User-Agent': UserAgent().random}
 )
     soup = BeautifulSoup(r.text, 'html.parser')
-    heading = [heading.text for heading in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])][0]
-    return heading if heading else 'No Heading'
-
+    try:
+      return [heading.text for heading in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])][0]
+    except:
+      return "No heading"
 def extract_text_from_url(url):
+   print(f"Fetching:{url}")
    downloaded = trafilatura.fetch_url(url)
-   return trafilatura.extract(downloaded)
+   text = trafilatura.extract(downloaded)
+   return  text if text else ""
 
 def is_url(url):
   try:
@@ -44,8 +47,8 @@ def predict(my_news):
     query = my_news
 
     if is_url(my_news):
-       my_news = extract_text_from_url(my_news)  
-       query = extract_heading_from_url(my_news) 
+      query = extract_heading_from_url(my_news) 
+      my_news = extract_text_from_url(my_news)  
     
     corpus_of_links = ''
     for url in news_query(query):
@@ -58,6 +61,3 @@ def predict(my_news):
     )
     return to_markdown(response.text) 
 
-if __name__ == "__main__":
-   info = input("Enter the input: ")
-   predict(info)
