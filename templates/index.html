@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>News Source Checker</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                setInterval(function() {
+                    $.get('/status', function(data) {
+                        $('#status').text(data.status);
+                    });
+                }, 1000);
+            });
+        </script>
+    </head>
+    <body>
+        <h1>News Source Checker</h1>
+        <form action="/insights" method="post">
+            <label for="statement">Statement:</label><br>
+            <textarea name="statement" rows="10" cols="30"></textarea><br>
+            <input type="submit" value="Submit">
+        </form>
+        <p id="status"></p>
+    </body>
+</html>
