@@ -1,28 +1,20 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import google.generativeai as genai
+import trafilatura
+import requests
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from googlesearch import search
 
 app = Flask(__name__)
 
-genai.configure(api_key='AIzaSyCWBI36ib_X-6RYSBoq9SHWxuKlUXPfRHc')
+genai.configure(api_key='AIzaSyBVLp9qzlaM3791iAVhku_RyF9gZwjQENA')
 model = genai.GenerativeModel('gemini-pro')
 
-@app.route('/')
-def index():
-    return '''
-    <html>
-        <body>
-            <form action="/call_llm" method="post">
-                <label for="corpus">Corpus:</label><br>
-                <textarea name="corpus" rows="10" cols="30"></textarea><br>
-                <label for="statement">Statement:</label><br>
-                <textarea name="statement" rows="10" cols="30"></textarea><br>
-                <input type="submit" value="Submit">
-            </form>
-        </body>
-    </html>
-    '''
-
-def news_sources(query, limit=2):
+def news_sources(query, limit=5):
     results = []
     for result in search(query, num_results=limit, sleep_interval=2):
         if requests.get(result).ok:
@@ -30,11 +22,10 @@ def news_sources(query, limit=2):
     return results
 
 def extract_text_from_url(url):
-   downloaded = trafilatura.fetch_url(url)
-   text = trafilatura.extract(downloaded)
-   if text:
-      return text
-   
+    downloaded = trafilatura.fetch_url(url)
+    text = trafilatura.extract(downloaded)
+    return text if text else ""  # Handle empty text extraction
+
 def textrank_summarize(text, num_sentences=1):
     parser = PlaintextParser.from_string(text, Tokenizer("english"))
     summarizer = TextRankSummarizer()
@@ -45,52 +36,39 @@ def extract_keywords(text):
     words = word_tokenize(text.lower())
     stop_words = set(stopwords.words('english'))
     filtered_words = [word for word in words if word not in stop_words]
-    tagged_words = pos_tag(filtered_words)
-    keywords = [word for word, pos in tagged_words if pos.startswith('NN') or pos.startswith('JJ') and len(word) > 2]
-    return set(keywords)
+    return set([word for word in filtered_words if len(word) > 2])
 
-def insights(statement):
-    urls = news_sources(statement)
-    corpus = ''
-    for url in urls:
-        text = extract_text_from_url(url)
-        if text:
-            # corpus += f'source:{url}, Text:{text}\n\n'
-           corpus += text +'\n\n'
-    return llm_response(corpus, statement)
-   
 def llm_response(corpus, statement):
-    prompt =f'''
-     Given a set of news articles (Corpus) and a statement to analyze (Statement), please assess the following:
+    prompt = f'''
+        Given a set of news articles (Corpus) and a statement to analyze (Statement), please assess the following:
 
-    * Bias: Identify any potential biases within the statement. 
-    * Factuality: Determine if the statement is likely true, false, or misleading. Provide evidence to support your claim (e.g., citing articles from the corpus).
-    * Summary: Generate a concise summary of the key points from the verified information in the corpus, attributing sources where appropriate (e.g., "According to [Article 1]...").
+        * Bias: Identify any potential biases within the statement. 
+        * Factuality: Determine if the statement is likely true, false, or misleading. Provide evidence to support your claim (e.g., citing articles from the corpus).
+        * Summary: Generate a concise summary of the key points from the verified information in the corpus, attributing sources where appropriate (e.g., "According to [Article 1]...").
 
-    **Note:** Focus only on information that can be corroborated by multiple sources within the corpus. 
-    corpus: {corpus} AND statement: {statement}
-    '''
+        **Note:** Focus only on information that can be corroborated by multiple sources within the corpus. 
+        corpus: {corpus} AND statement: {statement}
+        '''
     response = model.generate_content(prompt)
-    # print(response.prompt_feedback)
-    return josnify(response.text)
+    return jsonify(response.text)
 
-@app.route('/call_llm', methods=['POST'])
-def llm_response():
-    corpus = request.form.get('corpus')
+@app.route('/insights', methods=['POST'])
+def insights():
     statement = request.form.get('statement')
-    prompt =f'''
-     Given a set of news articles (Corpus) and a statement to analyze (Statement), please assess the following:
+    session['status'] = 'Getting news sources...'
+    urls = news_sources(statement)
+    session['status'] = 'Successfully got news sources'
+    corpus = '\n\n'.join(extract_text_from_url(url) for url in urls)
+    session['status'] = 'Getting LLM response...'
+    return llm_response(corpus, statement)
 
-    * Bias: Identify any potential biases within the statement. 
-    * Factuality: Determine if the statement is likely true, false, or misleading. Provide evidence to support your claim (e.g., citing articles from the corpus).
-    * Summary: Generate a concise summary of the key points from the verified information in the corpus, attributing sources where appropriate (e.g., "According to [Article 1]...").
+@app.route('/status')
+def status():
+    return jsonify(status=session.get('status', ''))
 
-    **Note:** Focus only on information that can be corroborated by multiple sources within the corpus. 
-    corpus: {corpus} AND statement: {statement}
-    '''
-
-    content = model.generate_content(prompt)
-    return jsonify(content)
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
