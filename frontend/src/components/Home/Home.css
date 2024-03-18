@@ -1,0 +1,17 @@
+/* Styles for the blinking cursor animation */
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  
+  .header__searchInput::selection {
+    background: #8C52FF; /* Change the color of the selected text */
+  }
+  
+  /* Apply the blinking animation to the caret */
+  .header__searchInput::after {
+    content: '';
+    animation: blink 1s infinite;
+  }
+  
