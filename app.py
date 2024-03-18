@@ -10,6 +10,7 @@ from nltk.tokenize import word_tokenize
 from googlesearch import search
 
 app = Flask(__name__)
+app.secret_key = 'your secret key'
 
 genai.configure(api_key='AIzaSyBVLp9qzlaM3791iAVhku_RyF9gZwjQENA')
 model = genai.GenerativeModel('gemini-pro')
@@ -71,4 +72,4 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
