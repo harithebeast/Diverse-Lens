@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import Preloader from "../src/components/Pre";
 import Navbar from "./components/Navbar";
-import Home from "./components/Home/Home";
-
+import Homesearch from "./homesearch.js";
+import Home from "./components/Home/Home.js";
 import Login from './login.js';
 import Signup from './signup.js';
 
 
-
 import About from "./about.js"
+
 
 
 
@@ -43,7 +43,9 @@ function App() {
         <Navbar />
         <ScrollToTop />
         <Routes>
-          <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home />} />
+          <Route path="/Homesearch" element={<Homesearch />} />
+          
           <Route path="/About" element={<About />} />
           
           

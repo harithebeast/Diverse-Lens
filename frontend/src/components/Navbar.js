@@ -6,6 +6,7 @@ import logo from "../Assets/logo.jpg";
 import { Link } from "react-router-dom";
 import { FaSignInAlt } from 'react-icons/fa';
 import { FaUserPlus } from 'react-icons/fa';
+import { BiSearch } from 'react-icons/bi';
  
 
 
@@ -65,6 +66,15 @@ function NavBar() {
             </Nav.Item>
 
 
+            <Nav.Item>
+              <Nav.Link
+                as={Link}
+                to="/homesearch"
+                onClick={() => updateExpanded(false)}
+              >
+                <BiSearch style={{ marginBottom: "2px" }} /> Search
+              </Nav.Link>
+            </Nav.Item>
             <Nav.Item>
               <Nav.Link
                 as={Link}
