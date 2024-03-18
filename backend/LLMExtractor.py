@@ -1,40 +1,23 @@
-from urllib.parse import urlparse
 import trafilatura
-import requests
-from fake_useragent import UserAgent
-from bs4 import BeautifulSoup
-from googlesearch import search
 import textwrap
+import requests
+from googlesearch import search
+from urllib.parse import urlparse 
 from IPython.display import Markdown
 import google.generativeai as genai
-from gnews import GNews
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk import pos_tag
 
+genai.configure(api_key='AIzaSyCWBI36ib_X-6RYSBoq9SHWxuKlUXPfRHc')
+model = genai.GenerativeModel('gemini-pro')
 
 def to_markdown(text):
   text = text.replace('•', '  *')
   return Markdown(textwrap.indent(text, '> ', predicate=lambda _: True))
-
-def news_query(query, limit=5):
-    results = []
-    google_news = GNews()
-    news = google_news.get_news(query)
-    for i in range(limit):
-        results.append(news[i]['url'])
-    return results
-
-def extract_heading_from_url(url):
-    r = requests.get(url, headers={'User-Agent': UserAgent().random}
-)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    try:
-      return [heading.text for heading in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])][0]
-    except:
-      return "No heading"
-def extract_text_from_url(url):
-   print(f"Fetching:{url}")
-   downloaded = trafilatura.fetch_url(url)
-   text = trafilatura.extract(downloaded)
-   return  text if text else ""
 
 def is_url(url):
   try:
@@ -43,21 +26,61 @@ def is_url(url):
   except ValueError:
     return False
 
-def predict(my_news):
-    query = my_news
+def news_sources(query, limit=2):
+    results = []
+    for result in search(query, num_results=limit, sleep_interval=2):
+        r = requests.get(result)
+        if r.ok:
+            results.append(result)
+    return results
 
-    if is_url(my_news):
-      query = extract_heading_from_url(my_news) 
-      my_news = extract_text_from_url(my_news)  
-    
-    corpus_of_links = ''
-    for url in news_query(query):
-        corpus_of_links += extract_text_from_url(url) + '\n'
+def extract_text_from_url(url):
+   if not is_url(url):
+      return
+   downloaded = trafilatura.fetch_url(url)
+   text = trafilatura.extract(downloaded)
+   if text:
+      return text
+   
+def textrank_summarize(text, num_sentences=1):
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    summarizer = TextRankSummarizer()
+    summary = summarizer(parser.document, num_sentences)
+    return ' '.join([str(sentence) for sentence in summary])
 
-    genai.configure(api_key='AIzaSyAx90CfmOJc3qUC_Y5f7OmQGhrcbYlYjDQ')
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(
-       f'''Analyze the provided links: {corpus_of_links}.can you answer whether the following statement with explanation is baised/unbaised or truth/fake: {my_news}'''
-    )
+def extract_keywords(text):
+    words = word_tokenize(text.lower())
+    stop_words = set(stopwords.words('english'))
+    filtered_words = [word for word in words if word not in stop_words]
+    tagged_words = pos_tag(filtered_words)
+    keywords = [word for word, pos in tagged_words if pos.startswith('NN') or pos.startswith('JJ') and len(word) > 2]
+    return set(keywords)
+   
+def llm_response(corpus, statement):
+    prompt =f'''
+     Given a set of news articles (Corpus) and a statement to analyze (Statement), please assess the following:
+
+    * Bias: Identify any potential biases within the statement. 
+    * Factuality: Determine if the statement is likely true, false, or misleading. Provide evidence to support your claim (e.g., citing articles from the corpus).
+    * Summary: Generate a concise summary of the key points from the verified information in the corpus, attributing sources where appropriate (e.g., "According to [Article 1]...").
+
+    **Note:** Focus only on information that can be corroborated by multiple sources within the corpus. 
+    corpus: {corpus} AND statement: {statement}
+    '''
+    response = model.generate_content(prompt)
+    # print(response.prompt_feedback)
     return to_markdown(response.text) 
 
+def insights(statement):
+    urls = news_sources(statement)
+    corpus = ''
+    for url in urls:
+        text = extract_text_from_url(url)
+        if text:
+            corpus += f'source:{url}, Text:{text}\n\n'
+    return llm_response(corpus, statement)
+
+# url = input("Enter the URL: ")
+# text = extract_text_from_url(url)
+# statement = textrank_summarize(text)
+insights('Tata ipl 2024 is cancelled')
