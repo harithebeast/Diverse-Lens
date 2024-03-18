@@ -14,6 +14,7 @@ import About from "./about.js"
 
 
 
+
 import {
   BrowserRouter as Router,
   Route,
@@ -35,6 +36,10 @@ function App() {
 
     return () => clearTimeout(timer);
   }, []);
+  
+  
+  
+  
 
   return (
     <Router>

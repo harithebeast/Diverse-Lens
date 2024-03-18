@@ -1,0 +1,8 @@
+flask
+google-generativeai
+trafilatura
+requests
+sumy
+nltk
+google
+flask-cors
