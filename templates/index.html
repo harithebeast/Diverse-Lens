@@ -1,25 +1,15 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>News Source Checker</title>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-        <script>
-            $(document).ready(function() {
-                setInterval(function() {
-                    $.get('/status', function(data) {
-                        $('#status').text(data.status);
-                    });
-                }, 1000);
-            });
-        </script>
-    </head>
-    <body>
-        <h1>News Source Checker</h1>
-        <form action="/insights" method="post">
-            <label for="statement">Statement:</label><br>
-            <textarea name="statement" rows="10" cols="30"></textarea><br>
-            <input type="submit" value="Submit">
-        </form>
-        <p id="status"></p>
-    </body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search App</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script type="text/babel" src="frontend\src\homesearch.js"></script>
+</body>
 </html>

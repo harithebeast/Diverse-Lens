@@ -62,9 +62,10 @@ function HomeSearch() {
         body: JSON.stringify({ statement: searchTerm }),
       });
       const data = await response.json();
-      setResult(data); // Store the result
+      setResult("HELLO"); // Store the result
       setSearchTerm(""); // Clear the search term after submission
     }
+    
   };
 
   return (
